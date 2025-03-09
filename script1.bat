@@ -1,5 +1,10 @@
 @echo off
-cd /d "C:\Program Files\TxGameAssistant\ui"
+:: قراءة مسار المحاكي من redit.txt
+set "reditFile=C:\Windows\System32\config\systemprofile\redit.txt"
+set /p gameLoopPath=<"%reditFile%"
+
+:: إذا لم يتم العثور على الملف، استخدم المسار الافتراضي
+if not defined gameLoopPath set "gameLoopPath=C:\Program Files\TxGameAssistant\ui"
 
 :: التحقق من صلاحيات المسؤول
 fltmc >nul 2>&1
@@ -25,13 +30,16 @@ if not exist "%hiddenPath%\%fileName%" (
     exit /b
 )
 
+:: ضبط مسار ADB استنادًا إلى مسار المحاكي
+set "ADB_PATH=%gameLoopPath%\adb.exe"
+
 :: بدء أوامر ADB
-adb kill-server
-adb start-server
-adb root
-adb remount
-adb push "%hiddenPath%\%fileName%" /data/local/tmp/
-adb shell mv /data/local/tmp/%fileName% /data/data/com.tencent.ig/lib/
+"%ADB_PATH%" kill-server
+"%ADB_PATH%" start-server
+"%ADB_PATH%" root
+"%ADB_PATH%" remount
+"%ADB_PATH%" push "%hiddenPath%\%fileName%" /data/local/tmp/
+"%ADB_PATH%" shell mv /data/local/tmp/%fileName% /data/data/com.tencent.ig/lib/
 
 :: تنظيف المسار المخفي
 if exist "%hiddenPath%\%fileName%" del "%hiddenPath%\%fileName%"
