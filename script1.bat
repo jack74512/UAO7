@@ -1,6 +1,14 @@
 @echo off
 chcp 65001 >nul
 
+:: Check if running as administrator
+net session >nul 2>&1
+if %errorLevel% neq 0 (
+    echo Requesting administrative privileges...
+    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    exit /b
+)
+
 :: Read path from redit.txt and verify it exists
 if not exist C:\Windows\System32\config\systemprofile\redit.txt (
     echo ERROR: redit.txt not found!
