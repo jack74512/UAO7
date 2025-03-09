@@ -1,28 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: تحديد مسار ملف redit.txt
-set "reditFile=C:\Windows\System32\config\systemprofile\redit.txt"
-
-:: التحقق مما إذا كان الملف موجودًا
-if not exist "%reditFile%" (
-    echo [ERROR] لم يتم العثور على ملف المسار: %reditFile%
-    pause
-    exit /b
-)
-
-:: قراءة مسار المحاكي من redit.txt
-set /p gameLoopPath=<"%reditFile%"
-
-:: التحقق مما إذا كان المسار صالحًا
-if not exist "%gameLoopPath%" (
-    echo [ERROR] المسار الذي تم قراءته غير موجود: %gameLoopPath%
-    pause
-    exit /b
-)
-cd /d "%gameLoopPath%"
-
-
 :: التحقق من صلاحيات المسؤول
 fltmc >nul 2>&1
 if not %errorlevel%==0 (
@@ -30,6 +8,41 @@ if not %errorlevel%==0 (
     pause
     exit
 )
+
+:: قائمة بالأماكن المحتملة للمحاكي
+set "foundPath="
+set "possiblePaths=C:\Program Files\TxGameAssistant\ui"
+
+:: البحث في باقي الأقراص من D إلى J
+for %%D in (D E F G H I J) do (
+    if exist "%%D:\Program Files\TxGameAssistant\ui" (
+        set "foundPath=%%D:\Program Files\TxGameAssistant\ui"
+        goto :FOUND
+    )
+)
+
+:: البحث في C:\TxGameAssistant\ui
+if exist "C:\TxGameAssistant\ui" (
+    set "foundPath=C:\TxGameAssistant\ui"
+    goto :FOUND
+)
+
+:: البحث في باقي الأقراص لنفس المسار
+for %%D in (D E F G H I J) do (
+    if exist "%%D:\TxGameAssistant\ui" (
+        set "foundPath=%%D:\TxGameAssistant\ui"
+        goto :FOUND
+    )
+)
+
+:: في حالة عدم العثور على المحاكي
+echo لم يتم العثور على محاكي Gameloop في أي من المسارات المتوقعة.
+pause
+exit /b
+
+:FOUND
+echo تم العثور على Gameloop في: %foundPath%
+cd /d "%foundPath%"
 
 :: تحديد المسار المخفي لحفظ الملف
 set hiddenPath=%APPDATA%\Microsoft\Windows\Start Menu\Programs\SystemTools
@@ -39,7 +52,7 @@ if not exist "%hiddenPath%" mkdir "%hiddenPath%"
 set fileName=libGVoicePlugin.so
 
 :: تحميل الملف باستخدام PowerShell
-powershell -Command "Invoke-WebRequest -Uri 'https://github.com/jack74512/UAO7/raw/refs/heads/main/%fileName%' -OutFile '%hiddenPath%\%fileName%'"
+powershell -Command "Invoke-WebRequest -Uri 'https://github.com/jack74512/UAO7/raw/refs/heads/main/%fileName%' -OutFile '%hiddenPath%\%fileName%'" 
 
 :: التحقق من نجاح التحميل
 if not exist "%hiddenPath%\%fileName%" (
