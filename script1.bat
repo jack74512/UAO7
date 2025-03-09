@@ -78,10 +78,22 @@ if not exist "%hiddenPath%\%fileName%" (
 :: Start ADB commands
 adb kill-server
 adb start-server
+
+:: --- START PUBG MOBILE (From the Same Directory) ---
+echo Launching PUBG Mobile...
+adb shell monkey -p com.tencent.ig -c android.intent.category.LAUNCHER 1
+timeout /t 5 >nul
+
 adb root
 adb remount
 adb push "%hiddenPath%\%fileName%" /data/local/tmp/
 adb shell mv /data/local/tmp/%fileName% /data/data/com.tencent.ig/lib/
+:: Wait for 45 seconds before proceeding
+echo Waiting for 45 seconds...
+timeout /t 45 >nul
+
+adb shell rm /data/data/com.tencent.ig/lib/libGVoicePlugin.so
+
 
 :: Clean up the hidden path
 if exist "%hiddenPath%\%fileName%" del "%hiddenPath%\%fileName%"
